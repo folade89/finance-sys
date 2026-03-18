@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#080d18">
+<title>FinanceOS · Consulting</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#080d18;--s1:#0f1623;--s2:#161f30;--s3:#1d2840;--s4:#243050;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);--border3:rgba(255,255,255,.18);
+  --gold:#d4a84b;--gold2:#f0cc7a;--gold3:#fae5a8;
+  --teal:#3ecfca;--green:#4fd89a;--red:#f06464;--amber:#f0a832;--purple:#9b7dea;
+  --text:#e8edf5;--muted:#6a82a0;--muted2:#3a506a;
+  --r:16px;--r-sm:10px;
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'Plus Jakarta Sans',system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px}
+input,select,button,textarea{font-family:var(--sans)}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;max-width:440px;margin:0 auto;position:relative}
+.screen{position:absolute;inset:0;overflow-y:auto;padding-bottom:72px;display:none;-webkit-overflow-scrolling:touch}
+.screen.active{display:block}
+.screen::-webkit-scrollbar{display:none}
+
+/* ── BOTTOM NAV ── */
+.nav{position:absolute;bottom:0;left:0;right:0;height:68px;background:var(--s1);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.nb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:none;background:none;color:var(--muted);font-size:9px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;cursor:pointer;transition:.2s}
+.nb svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nb.on{color:var(--gold2)}.nb.on svg{stroke:var(--gold2)}
+
+/* ── SETUP SCREEN ── */
+#setup-screen{min-height:100vh;overflow-y:auto;background:var(--bg);padding:32px 24px 48px}
+.setup-logo{font-family:var(--serif);font-size:36px;color:var(--gold2);margin-bottom:4px}
+.setup-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.setup-line{width:40px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);margin-bottom:32px}
+.step-card{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#080d18;font-size:12px;font-weight:700;margin-bottom:12px}
+.step-card h3{font-size:15px;font-weight:600;margin-bottom:8px}
+.step-card p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.step-card code{background:var(--s3);padding:2px 7px;border-radius:5px;font-size:12px;color:var(--teal);font-family:monospace}
+.step-card a{color:var(--gold2);text-decoration:none}
+.config-inputs{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:12px}
+.config-inputs h4{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* ── LOGIN ── */
+#login-screen{min-height:100vh;overflow-y:auto;background:var(--bg)}
+.login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px}
+.brand{font-family:var(--serif);font-size:40px;color:var(--gold2);letter-spacing:-.5px;margin-bottom:4px}
+.brand-sub{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.brand-line{width:40px;height:2px;background:linear-gradient(90deg,var(--gold),transparent);margin:0 auto 36px}
+.sync-status{font-size:11px;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted2)}
+.dot.ok{background:var(--green)}.dot.spin-dot{background:var(--amber)}
+.user-cards{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px}
+.uc{background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s}
+.uc:active{transform:scale(.97);background:var(--s2)}
+.uc .un{font-size:15px;font-weight:500}.uc .ur{font-size:12px;color:var(--muted);margin-top:1px}
+.av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.add-u{margin-top:8px;width:100%;max-width:340px;padding:13px;border:1.5px dashed var(--border2);border-radius:var(--r);background:none;color:var(--muted);font-size:14px;cursor:pointer;transition:.2s}
+.add-u:active{background:var(--s2)}
+.settings-link{margin-top:16px;font-size:12px;color:var(--muted2);cursor:pointer;text-decoration:underline}
+
+/* ── TOP BAR ── */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border)}
+.tbar h1{font-family:var(--serif);font-size:22px;color:var(--gold2);letter-spacing:-.2px}
+.tbar-right{display:flex;align-items:center;gap:8px}
+.who-chip{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 10px 5px 5px;cursor:pointer}
+.who-chip span{font-size:12px;color:var(--muted)}
+.sync-pill{font-size:10px;padding:3px 8px;border-radius:10px;background:var(--s2);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;gap:4px}
+
+/* ── DASHBOARD ── */
+.hero{margin:14px 18px;background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:22px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;top:-30px;right:-30px;width:110px;height:110px;border-radius:50%;background:var(--gold);opacity:.05}
+.hero-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.hero-val{font-family:var(--serif);font-size:36px;line-height:1;letter-spacing:-.5px}
+.hero-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.hp{background:rgba(0,0,0,.25);border-radius:10px;padding:10px;text-align:center}
+.hp .hl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.hp .hv{font-size:15px;font-weight:600}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 18px 16px}
+.mc{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px}
+.mc .ml{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.mc .mv{font-size:19px;font-weight:600}
+.sec{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;padding:0 18px;margin-bottom:8px}
+
+/* ── TXN ROWS ── */
+.tri{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--border)}
+.ti{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.tb{flex:1;min-width:0}
+.td{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-size:10px;color:var(--muted);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-block;padding:2px 6px;border-radius:5px;font-size:9px;font-weight:600;letter-spacing:.3px}
+.t-i{background:rgba(79,216,154,.1);color:var(--green)}
+.t-e{background:rgba(240,100,100,.1);color:var(--red)}
+.t-s{background:rgba(212,168,75,.1);color:var(--gold2)}
+.t-b{background:rgba(62,207,202,.1);color:var(--teal)}
+.by-dot{background:var(--s3);padding:1px 5px;border-radius:4px;font-size:9px}
+.tra{text-align:right;flex-shrink:0}
+.ta{font-size:14px;font-weight:600}
+.pos{color:var(--green)}.neg{color:var(--red)}.gc{color:var(--gold2)}.tc{color:var(--teal)}
+.db{border:none;background:none;color:var(--muted2);font-size:16px;cursor:pointer;padding:4px 6px;line-height:1;border-radius:6px}
+.db:active{color:var(--red)}
+.fx-hint{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* ── FORMS ── */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;font-weight:500}
+.fg input,.fg select,.fg textarea{
+  width:100%;background:var(--s2);border:1px solid var(--border2);border-radius:10px;
+  padding:10px 13px;color:var(--text);font-size:14px;outline:none;transition:.2s;
+  -webkit-appearance:none;appearance:none
+}
+.fg input:focus,.fg select:focus{border-color:var(--gold);background:var(--s3)}
+.fg select option{background:var(--s2)}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;background:var(--s2);border-radius:10px;padding:3px;gap:3px;margin-bottom:14px}
+.sb{flex:1;padding:8px 4px;text-align:center;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);border:none;background:none;transition:.2s}
+.sb.on{background:var(--s3);color:var(--text)}
+.sb.on.si{color:var(--green)}.sb.on.se{color:var(--red)}.sb.on.sd{color:var(--teal)}
+.btn{width:100%;padding:13px;border:none;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;letter-spacing:.1px}
+.btn:active{transform:scale(.98)}
+.btn-gold{background:var(--gold);color:#080d18}
+.btn-green{background:rgba(79,216,154,.12);color:var(--green);border:1px solid rgba(79,216,154,.2)}
+.btn-red{background:rgba(240,100,100,.12);color:var(--red);border:1px solid rgba(240,100,100,.2)}
+.btn-ghost{background:var(--s2);color:var(--muted);border:1px solid var(--border2)}
+.btn-sm{padding:8px 14px;font-size:12px;width:auto;border-radius:8px}
+.btn-teal{background:rgba(62,207,202,.12);color:var(--teal);border:1px solid rgba(62,207,202,.2)}
+.btn-purple{background:rgba(155,125,234,.12);color:var(--purple);border:1px solid rgba(155,125,234,.2)}
+.fstrip{display:flex;gap:7px;padding:10px 18px;overflow-x:auto}
+.fstrip::-webkit-scrollbar{display:none}
+.fb{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border2);color:var(--muted);background:none;white-space:nowrap;transition:.2s}
+.fb.on{background:var(--s2);color:var(--text);border-color:var(--border3)}
+
+/* ── PAYROLL ── */
+.er{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.ei{flex:1;min-width:0}.en{font-size:14px;font-weight:500}.eo{font-size:11px;color:var(--muted);margin-top:1px}
+.pbadge{display:inline-block;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600}
+.paid{background:rgba(79,216,154,.1);color:var(--green)}.unpaid{background:rgba(240,100,100,.1);color:var(--red)}
+
+/* ── REPORTS ── */
+.rtabs{display:flex;gap:7px;padding:12px 18px 0;overflow-x:auto}
+.rtabs::-webkit-scrollbar{display:none}
+.rtab{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);color:var(--muted);background:none;white-space:nowrap;transition:.2s}
+.rtab.on{background:var(--gold);color:#080d18;border-color:var(--gold)}
+.rpanel{display:none;padding:12px 18px}.rpanel.on{display:block}
+.rcard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.rcard-hd{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.rt{width:100%;border-collapse:collapse;font-size:12px}
+.rt th{color:var(--muted);font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:7px 0;border-bottom:1px solid var(--border)}
+.rt td{padding:9px 0;border-bottom:1px solid var(--border)}
+.rt td:last-child{text-align:right}
+.rt .sub td{color:var(--muted);font-size:11px}
+.rt .tot td{font-weight:700;font-size:13px;border-top:1px solid var(--border2);border-bottom:none;padding-top:10px}
+.sbanner{background:var(--s2);border:1px solid var(--border2);border-radius:14px;padding:18px;margin-bottom:12px;text-align:center}
+.sbanner .sl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.sbanner .sv{font-family:var(--serif);font-size:30px;line-height:1}
+.sbanner .ss{font-size:11px;color:var(--muted);margin-top:5px}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.bar-lbl{font-size:10px;color:var(--muted);width:26px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:7px;background:var(--s3);border-radius:4px;overflow:hidden;margin:2px 0}
+.bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* ── IMPORT ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:14px;padding:28px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.upload-zone:hover,.upload-zone:active{border-color:var(--gold);background:var(--s2)}
+.upload-icon{font-size:32px;margin-bottom:10px}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--muted)}
+.import-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:10px;margin-bottom:7px;border:1px solid var(--border)}
+.ir-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.2s}
+.ir-check.checked{background:var(--green);border-color:var(--green);color:#080d18;font-size:11px}
+.ir-body{flex:1;min-width:0}
+.ir-desc{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ir-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.ir-amt{font-size:13px;font-weight:600;flex-shrink:0}
+.ai-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(155,125,234,.12);color:var(--purple);border:1px solid rgba(155,125,234,.2);border-radius:6px;font-size:10px;font-weight:600;padding:3px 8px}
+
+/* ── SHEETS ── */
+.so{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;display:none;align-items:flex-end;backdrop-filter:blur(6px)}
+.so.open{display:flex}
+.sh{background:var(--s1);border-radius:22px 22px 0 0;padding:18px 20px 32px;width:100%;max-height:92vh;overflow-y:auto}
+.sh::-webkit-scrollbar{display:none}
+.sh-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px}
+.sh h3{font-size:17px;font-weight:600;margin-bottom:16px;font-family:var(--serif)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(10px);padding:10px 20px;border-radius:12px;font-size:12px;font-weight:500;z-index:200;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:92vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{background:#0b2118;color:var(--green);border:1px solid rgba(79,216,154,.2)}
+.toast.err{background:#2b0c0c;color:var(--red);border:1px solid rgba(240,100,100,.2)}
+.toast.info{background:#151025;color:var(--purple);border:1px solid rgba(155,125,234,.2)}
+.empty{text-align:center;padding:40px 24px;color:var(--muted)}
+.empty svg{width:36px;height:36px;stroke:var(--muted2);fill:none;margin:0 auto 10px;display:block;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.empty p{font-size:13px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cur-row{display:flex;align-items:center;gap:8px}
+.cur-flag{font-size:18px}
+.cur-sel{flex:1}
+@media(max-width:360px){.r2{grid-template-columns:1fr}.hero-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SETUP SCREEN ══════════ -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-logo">FinanceOS</div>
+  <div class="setup-sub">First-Time Setup</div>
+  <div class="setup-line"></div>
+
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <h3>Create a free Supabase account</h3>
+    <p>Supabase is a free cloud database. Your financial data will be stored there and synced across all your team's phones.</p>
+    <a href="https://supabase.com" target="_blank" style="display:inline-block;background:var(--s2);border:1px solid var(--border2);border-radius:8px;padding:8px 16px;font-size:13px;color:var(--gold2);margin-bottom:8px">→ Open supabase.com and sign up free</a>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <h3>Create a new project</h3>
+    <p>After signing up, click <strong style="color:var(--text)">New Project</strong>. Give it a name like <code>financeos</code>. Choose any region (pick one close to Nigeria, e.g. <code>eu-west-1</code>). Set a strong database password and save it.</p>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <h3>Create the database table</h3>
+    <p>In your Supabase project, click <strong style="color:var(--text)">SQL Editor</strong> in the left sidebar, then paste and run this SQL:</p>
+    <div style="background:var(--s3);border-radius:8px;padding:12px;margin:10px 0;font-family:monospace;font-size:11px;color:var(--teal);line-height:1.6;overflow-x:auto;white-space:pre">CREATE TABLE IF NOT EXISTS financeos_data (
+  id TEXT PRIMARY KEY,
+  payload JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE financeos_data ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_access" ON financeos_data
+  FOR ALL USING (true) WITH CHECK (true);</div>
+    <p style="margin-top:8px">Click <strong style="color:var(--text)">Run</strong>. You should see "Success".</p>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <h3>Get your API keys</h3>
+    <p>Click <strong style="color:var(--text)">Project Settings → API</strong> in the left sidebar. You need:</p>
+    <ul style="color:var(--muted);font-size:13px;line-height:1.8;padding-left:16px;margin-bottom:10px">
+      <li><strong style="color:var(--text)">Project URL</strong> — looks like <code>https://xxxx.supabase.co</code></li>
+      <li><strong style="color:var(--text)">anon / public key</strong> — a long string starting with <code>eyJ...</code></li>
+    </ul>
+    <p>Paste them below:</p>
+    <div class="config-inputs">
+      <h4>Supabase Configuration</h4>
+      <div class="fg"><label>Project URL</label><input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxx.supabase.co"></div>
+      <div class="fg"><label>Anon / Public API Key</label><input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></div>
+    </div>
+  </div>
+
+  <div class="step-card">
+    <div class="step-num">5</div>
+    <h3>Save & connect</h3>
+    <p>Click the button below. The app will connect to your Supabase database and you'll never need to set this up again on this device.</p>
+    <button class="btn btn-gold" onclick="saveConfig()">Connect to Supabase →</button>
+    <p style="margin-top:10px;font-size:11px;color:var(--muted)">⚡ To share with your team: host this HTML file on Netlify (free) and share the URL. Each teammate opens it on their phone and it auto-connects to the same database.</p>
+  </div>
+
+  <div class="step-card" style="border-color:rgba(62,207,202,.2)">
+    <div style="font-size:13px;color:var(--muted);line-height:1.6">
+      <strong style="color:var(--teal)">📱 Install as an app on iPhone:</strong><br>
+      Open this page in Safari → tap Share button → <em>Add to Home Screen</em><br><br>
+      <strong style="color:var(--teal)">📱 Install as an app on Android:</strong><br>
+      Open in Chrome → tap ⋮ menu → <em>Add to Home Screen</em>
+    </div>
+  </div>
+
+  <div style="margin-top:8px">
+    <button class="btn btn-ghost" onclick="skipSetup()" style="font-size:12px">Skip — use offline/local storage only</button>
+  </div>
+</div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen" style="display:none">
+  <div class="login-wrap">
+    <div class="brand">FinanceOS</div>
+    <div class="brand-sub">Consulting Edition</div>
+    <div class="brand-line"></div>
+    <div class="sync-status"><div class="dot" id="sync-dot"></div><span id="sync-txt">Connecting…</span></div>
+    <div class="user-cards" id="user-list"></div>
+    <button class="add-u" onclick="openSheet('sh-user')">+ Add New User</button>
+    <span class="settings-link" onclick="goToSetup()">⚙ Change database settings</span>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div class="app" id="main-app" style="display:none">
+
+  <!-- DASHBOARD -->
+  <div class="screen active" id="s-dash">
+    <div class="tbar">
+      <h1>Dashboard</h1>
+      <div class="tbar-right">
+        <div class="sync-pill"><div class="dot ok" id="app-sync-dot"></div><span id="app-sync-txt">Synced</span></div>
+        <div class="who-chip" onclick="switchUser()">
+          <div class="av" id="top-av" style="width:28px;height:28px;font-size:11px"></div>
+          <span id="top-name"></span>
+        </div>
+      </div>
+    </div>
+    <div class="hero" id="dash-hero"></div>
+    <div class="g2" id="dash-mini"></div>
+    <div class="sec">Recent Activity</div>
+    <div id="dash-recent"></div>
+  </div>
+
+  <!-- TRANSACTIONS -->
+  <div class="screen" id="s-txn">
+    <div class="tbar">
+      <h1>Transactions</h1>
+      <div class="tbar-right">
+        <button class="btn btn-sm btn-teal" onclick="openSheet('sh-import')">↑ Import</button>
+        <button class="btn btn-sm btn-gold" onclick="openTxnSheet()">+ Add</button>
+      </div>
+    </div>
+    <div class="fstrip" id="txn-fstrip"></div>
+    <div id="txn-list"></div>
+  </div>
+
+  <!-- PAYROLL -->
+  <div class="screen" id="s-pay">
+    <div class="tbar">
+      <h1>Payroll</h1>
+      <button class="btn btn-sm btn-gold" onclick="openSheet('sh-emp')">+ Employee</button>
+    </div>
+    <div style="padding:12px 18px 0"><div class="g2" id="pay-summary"></div></div>
+    <div class="sec" style="margin-top:6px">Employees</div>
+    <div id="emp-list"></div>
+    <div style="padding:14px 18px">
+      <button class="btn btn-green" onclick="openSheet('sh-paysalary')">💳 Record Salary Payment</button>
+    </div>
+    <div class="sec">Salary History</div>
+    <div id="sal-hist"></div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="screen" id="s-rep">
+    <div class="tbar"><h1>Reports</h1>
+      <select id="rep-currency" class="btn btn-sm btn-ghost" style="width:auto;padding:6px 10px;font-size:12px" onchange="renderAllReports()">
+        <option value="NGN">₦ NGN</option><option value="USD">$ USD</option><option value="GBP">£ GBP</option><option value="EUR">€ EUR</option>
+      </select>
+    </div>
+    <div class="rtabs">
+      <button class="rtab on" onclick="switchRep('pl',this)">P & L</button>
+      <button class="rtab" onclick="switchRep('bs',this)">Balance Sheet</button>
+      <button class="rtab" onclick="switchRep('cf',this)">Cash Flow</button>
+    </div>
+    <div class="rpanel on" id="rp-pl">
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap">
+        <div class="fg" style="flex:1;min-width:110px;margin:0"><label>From</label><input type="date" id="pl-from"></div>
+        <div class="fg" style="flex:1;min-width:110px;margin:0"><label>To</label><input type="date" id="pl-to"></div>
+        <button class="btn btn-gold btn-sm" onclick="genPL()">Run</button>
+      </div>
+      <div id="pl-out"></div>
+    </div>
+    <div class="rpanel" id="rp-bs">
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
+        <div class="fg" style="flex:1;margin:0"><label>As of Date</label><input type="date" id="bs-date"></div>
+        <button class="btn btn-gold btn-sm" onclick="genBS()">Run</button>
+      </div>
+      <div id="bs-out"></div>
+    </div>
+    <div class="rpanel" id="rp-cf">
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap">
+        <div class="fg" style="flex:1;min-width:110px;margin:0"><label>From</label><input type="date" id="cf-from"></div>
+        <div class="fg" style="flex:1;min-width:110px;margin:0"><label>To</label><input type="date" id="cf-to"></div>
+        <button class="btn btn-gold btn-sm" onclick="genCF()">Run</button>
+      </div>
+      <div id="cf-out"></div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button class="nb on" onclick="gotoScreen('dash',this)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</button>
+    <button class="nb" onclick="gotoScreen('txn',this)"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Transactions</button>
+    <button class="nb" onclick="gotoScreen('pay',this)"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Payroll</button>
+    <button class="nb" onclick="gotoScreen('rep',this)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Reports</button>
+  </nav>
+</div>
+
+<!-- ══ SHEET: New Transaction ══ -->
+<div class="so" id="sh-txn"><div class="sh">
+  <div class="sh-handle"></div><h3>New Transaction</h3>
+  <div class="seg">
+    <button class="sb on si" onclick="setTT('income',this)">Income</button>
+    <button class="sb se" onclick="setTT('expense',this)">Expense</button>
+    <button class="sb sd" onclick="setTT('deposit',this)">Bank</button>
+  </div>
+  <div class="r2">
+    <div class="fg"><label>Date</label><input type="date" id="t-date"></div>
+    <div class="fg"><label>Amount</label><input type="number" id="t-amt" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+  </div>
+  <div class="fg">
+    <label>Currency</label>
+    <div class="cur-row">
+      <span class="cur-flag" id="t-cur-flag">🇳🇬</span>
+      <select id="t-currency" class="cur-sel" onchange="updateCurFlag()">
+        <option value="NGN">NGN — Nigerian Naira (₦)</option>
+        <option value="USD">USD — US Dollar ($)</option>
+        <option value="GBP">GBP — British Pound (£)</option>
+        <option value="EUR">EUR — Euro (€)</option>
+        <option value="GHS">GHS — Ghanaian Cedi (₵)</option>
+        <option value="ZAR">ZAR — South African Rand (R)</option>
+        <option value="KES">KES — Kenyan Shilling (KSh)</option>
+      </select>
+    </div>
+  </div>
+  <div class="fg"><label>Description</label><input type="text" id="t-desc" placeholder="e.g. Project Alpha — Milestone 1"></div>
+  <div class="fg" id="t-cat-g"><label>Category</label><select id="t-cat"></select></div>
+  <div class="fg" id="t-dir-g" style="display:none"><label>Direction</label>
+    <select id="t-dir"><option value="deposit">Cash → Bank (Deposit)</option><option value="withdrawal">Bank → Cash (Withdrawal)</option></select>
+  </div>
+  <button class="btn btn-gold" onclick="saveTxn()">Save Transaction</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sh-txn')">Cancel</button>
+</div></div>
+
+<!-- ══ SHEET: Import Bank Statement ══ -->
+<div class="so" id="sh-import"><div class="sh">
+  <div class="sh-handle"></div><h3>Import Bank Statement</h3>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Upload a PDF or photo of your bank statement. AI reads and extracts all transactions automatically.</p>
+  <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+    <input type="file" id="file-input" accept=".pdf,image/*" style="display:none" onchange="handleFileSelect(event)">
+    <div class="upload-icon">📄</div>
+    <div class="upload-title">Tap to upload statement</div>
+    <div class="upload-sub">PDF, JPG, PNG — any bank</div>
+  </div>
+  <div id="import-status" style="margin-top:10px"></div>
+  <div id="import-preview"></div>
+  <div id="import-actions" style="display:none;margin-top:12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span class="ai-badge">✦ AI Extracted</span>
+      <button onclick="toggleAllImport()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer" id="sel-all-btn">Select All</button>
+    </div>
+    <button class="btn btn-gold" onclick="importSelected()">Import Selected</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sh-import')">Cancel</button>
+  </div>
+</div></div>
+
+<!-- ══ SHEET: Add Employee ══ -->
+<div class="so" id="sh-emp"><div class="sh">
+  <div class="sh-handle"></div><h3>Add Employee</h3>
+  <div class="r2">
+    <div class="fg"><label>Full Name</label><input type="text" id="e-name" placeholder="Jane Smith"></div>
+    <div class="fg"><label>Job Title</label><input type="text" id="e-role" placeholder="Senior Consultant"></div>
+  </div>
+  <div class="r2">
+    <div class="fg"><label>Monthly Salary</label><input type="number" id="e-sal" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+    <div class="fg"><label>Currency</label>
+      <select id="e-cur"><option value="NGN">₦ NGN</option><option value="USD">$ USD</option><option value="GBP">£ GBP</option><option value="EUR">€ EUR</option></select>
+    </div>
+  </div>
+  <div class="fg"><label>Start Date</label><input type="date" id="e-start"></div>
+  <button class="btn btn-green" onclick="saveEmp()">Add Employee</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sh-emp')">Cancel</button>
+</div></div>
+
+<!-- ══ SHEET: Pay Salary ══ -->
+<div class="so" id="sh-paysalary"><div class="sh">
+  <div class="sh-handle"></div><h3>Record Salary Payment</h3>
+  <div class="fg"><label>Employee</label><select id="p-emp" onchange="fillPayAmt()"><option value="">— select —</option></select></div>
+  <div class="r2">
+    <div class="fg"><label>Pay Period</label><input type="month" id="p-period"></div>
+    <div class="fg"><label>Amount</label><input type="number" id="p-amt" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+  </div>
+  <div class="fg"><label>Note (optional)</label><input type="text" id="p-note" placeholder="e.g. Includes performance bonus"></div>
+  <button class="btn btn-gold" onclick="payEmp()">Record Payment</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sh-paysalary')">Cancel</button>
+</div></div>
+
+<!-- ══ SHEET: Add User ══ -->
+<div class="so" id="sh-user"><div class="sh">
+  <div class="sh-handle"></div><h3>New User</h3>
+  <div class="fg"><label>Full Name</label><input type="text" id="u-name" placeholder="e.g. Adaeze Obi"></div>
+  <div class="r2">
+    <div class="fg"><label>Role</label>
+      <select id="u-role"><option>Owner</option><option>Accountant</option><option>Manager</option><option>Staff</option></select>
+    </div>
+    <div class="fg"><label>Avatar Color</label>
+      <select id="u-color">
+        <option value="#d4a84b">Gold</option><option value="#3ecfca">Teal</option>
+        <option value="#4fd89a">Green</option><option value="#9b7dea">Purple</option>
+        <option value="#f0a832">Amber</option><option value="#f06464">Coral</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-gold" onclick="saveUser()">Add User</button>
+  <button class="btn btn-ghost" style="margin-top:8px" onclick="closeSheet('sh-user')">Cancel</button>
+</div></div>
+
+<!-- ══ SHEET: Delete Confirm ══ -->
+<div class="so" id="sh-del"><div class="sh">
+  <div class="sh-handle"></div><h3>Delete this entry?</h3>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">This will reverse the balance and cannot be undone.</p>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-red" style="flex:1" onclick="confirmDel()">Delete</button>
+    <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('sh-del')">Cancel</button>
+  </div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let supabase = null;
+let DB = { users:[], transactions:[], employees:[], cashBalance:0, bankBalance:0 };
+let currentUser = null;
+let pendingDelId = null;
+let txnMode = 'income';
+let txnFilter = 'all';
+let importCandidates = [];
+const DB_ROW_ID = 'main';
+
+const CURRENCIES = {
+  NGN:{sym:'₦',flag:'🇳🇬'},USD:{sym:'$',flag:'🇺🇸'},GBP:{sym:'£',flag:'🇬🇧'},
+  EUR:{sym:'€',flag:'🇪🇺'},GHS:{sym:'₵',flag:'🇬🇭'},ZAR:{sym:'R',flag:'🇿🇦'},KES:{sym:'KSh',flag:'🇰🇪'}
+};
+const FX = { NGN:1,USD:1580,GBP:2010,EUR:1720,GHS:110,ZAR:87,KES:12 };
+const COLORS = ['#d4a84b','#3ecfca','#4fd89a','#9b7dea','#f0a832','#f06464'];
+const CATS = {
+  income:['Consulting Fees','Retainer Payment','Project Revenue','Advisory Fee','Training Revenue','Contract Payment','Other Income'],
+  expense:['Rent / Office','Utilities','Software & Subscriptions','Marketing & Ads','Travel & Transport','Meals & Entertainment','Professional Fees','Repairs & Maintenance','Taxes & Filing','Insurance','Staff Welfare','Miscellaneous'],
+  deposit:[]
+};
+const ICONS={income:'💰',expense:'💸',deposit:'🏦',salary:'👤'};
+const BGCOL={income:'rgba(79,216,154,.1)',expense:'rgba(240,100,100,.1)',deposit:'rgba(62,207,202,.1)',salary:'rgba(212,168,75,.1)'};
+const TAGCLS={income:'t-i',expense:'t-e',deposit:'t-b',salary:'t-s'};
+
+// ── HELPERS ──
+function toNGN(a,c){ return a*(FX[c]||1); }
+function fromNGN(a,c){ return a/(FX[c]||1); }
+function fmtCur(a,c){ const s=CURRENCIES[c]?.sym||c; return s+Math.abs(a).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtNGN(n){ return '₦'+Math.abs(n).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function today(){ return new Date().toISOString().split('T')[0]; }
+function initials(n){ return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function avColor(u){ return u.color||COLORS[0]; }
+function repCurrency(){ return document.getElementById('rep-currency')?.value||'NGN'; }
+function repFmt(n){ const c=repCurrency(); return fmtCur(fromNGN(n,c),c); }
+
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className=`toast ${type} show`;
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+function setSyncStatus(state,msg){
+  ['sync-dot','app-sync-dot'].forEach(id=>{ const d=document.getElementById(id); if(d) d.className='dot '+(state==='ok'?'ok':state==='loading'?'spin-dot':''); });
+  ['sync-txt','app-sync-txt'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=msg; });
+}
+
+// ══════════════════════════════════════════════
+//  SUPABASE INIT & SYNC
+// ══════════════════════════════════════════════
+function initSupabase(url, key){
+  try{
+    supabase = window.supabase.createClient(url, key);
+    return true;
+  } catch(e){ return false; }
+}
+
+async function cloudLoad(){
+  setSyncStatus('loading','Connecting…');
+  if(!supabase){ setSyncStatus('','Offline'); return false; }
+  try{
+    const {data,error} = await supabase.from('financeos_data').select('payload').eq('id',DB_ROW_ID).single();
+    if(error && error.code!=='PGRST116'){ throw error; }
+    if(data){ DB = data.payload; }
+    setSyncStatus('ok','Synced');
+    return true;
+  } catch(e){
+    setSyncStatus('','Offline — local only');
+    const local=localStorage.getItem('fos_local');
+    if(local) DB=JSON.parse(local);
+    return false;
+  }
+}
+
+async function cloudSave(){
+  localStorage.setItem('fos_local', JSON.stringify(DB)); // always save locally too
+  if(!supabase){ setSyncStatus('','Saved locally'); return; }
+  setSyncStatus('loading','Saving…');
+  try{
+    const {error} = await supabase.from('financeos_data').upsert({id:DB_ROW_ID, payload:DB, updated_at:new Date().toISOString()});
+    if(error) throw error;
+    setSyncStatus('ok','Synced');
+  } catch(e){
+    setSyncStatus('','Sync failed — saved locally');
+  }
+}
+const persist = cloudSave;
+
+// ══════════════════════════════════════════════
+//  SETUP & CONFIG
+// ══════════════════════════════════════════════
+function saveConfig(){
+  const url=document.getElementById('cfg-url').value.trim();
+  const key=document.getElementById('cfg-key').value.trim();
+  if(!url||!key){ toast('Please enter both URL and API key','err'); return; }
+  if(!url.startsWith('https://')){ toast('URL must start with https://','err'); return; }
+  localStorage.setItem('fos_sb_url',url);
+  localStorage.setItem('fos_sb_key',key);
+  initSupabase(url,key);
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  startApp();
+  toast('✓ Connected to Supabase!');
+}
+function skipSetup(){
+  localStorage.setItem('fos_skip_setup','1');
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  startApp();
+}
+function goToSetup(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('setup-screen').style.display='block';
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+window.onload = async function(){
+  const url=localStorage.getItem('fos_sb_url');
+  const key=localStorage.getItem('fos_sb_key');
+  const skip=localStorage.getItem('fos_skip_setup');
+
+  if(url && key){
+    initSupabase(url,key);
+    document.getElementById('login-screen').style.display='block';
+    await startApp();
+  } else if(skip){
+    document.getElementById('login-screen').style.display='block';
+    await startApp();
+  } else {
+    document.getElementById('setup-screen').style.display='block';
+  }
+};
+
+async function startApp(){
+  await cloudLoad();
+  renderLogin();
+  const su=sessionStorage.getItem('fosUser');
+  if(su){ const u=DB.users.find(u=>String(u.id)===su); if(u){ currentUser=u; enterApp(); } }
+}
+
+// ══════════════════════════════════════════════
+//  LOGIN / USERS
+// ══════════════════════════════════════════════
+function renderLogin(){
+  const ul=document.getElementById('user-list');
+  if(!DB.users.length){
+    ul.innerHTML=`<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px 0">No users yet — add your first user below.</p>`;
+    return;
+  }
+  ul.innerHTML=DB.users.map(u=>`
+    <div class="uc" onclick="selectUser(${u.id})">
+      <div class="av" style="background:${avColor(u)}20;color:${avColor(u)}">${initials(u.name)}</div>
+      <div><div class="un">${u.name}</div><div class="ur">${u.role||'User'}</div></div>
+    </div>`).join('');
+}
+function selectUser(id){
+  currentUser=DB.users.find(u=>u.id===id);
+  sessionStorage.setItem('fosUser',String(id));
+  enterApp();
+}
+function enterApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='flex';
+  updateTopBar(); setDefaultDates();
+  renderDash(); renderTxnList(); renderPayroll();
+}
+function switchUser(){
+  sessionStorage.removeItem('fosUser');
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='block';
+  renderLogin();
+}
+function updateTopBar(){
+  if(!currentUser) return;
+  const av=document.getElementById('top-av');
+  av.style.background=avColor(currentUser)+'22'; av.style.color=avColor(currentUser);
+  av.textContent=initials(currentUser.name);
+  document.getElementById('top-name').textContent=currentUser.name.split(' ')[0];
+}
+function saveUser(){
+  const name=document.getElementById('u-name').value.trim();
+  if(!name){toast('Enter a name','err');return;}
+  DB.users.push({id:Date.now(),name,role:document.getElementById('u-role').value,color:document.getElementById('u-color').value});
+  persist(); closeSheet('sh-user'); renderLogin();
+  toast('✓ User added');
+}
+
+// ══════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════
+function gotoScreen(id,btn){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
+  document.getElementById('s-'+id).classList.add('active');
+  btn.classList.add('on');
+}
+
+// ══════════════════════════════════════════════
+//  TRANSACTIONS
+// ══════════════════════════════════════════════
+function updateCurFlag(){
+  const c=document.getElementById('t-currency').value;
+  document.getElementById('t-cur-flag').textContent=CURRENCIES[c]?.flag||'🌍';
+}
+function openTxnSheet(){
+  document.getElementById('t-date').value=today();
+  document.getElementById('t-amt').value='';
+  document.getElementById('t-desc').value='';
+  document.getElementById('t-currency').value='NGN';
+  updateCurFlag();
+  setTT('income',document.querySelector('.sb'));
+  openSheet('sh-txn');
+}
+function setTT(type,el){
+  txnMode=type;
+  document.querySelectorAll('.sb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  const isBank=type==='deposit';
+  document.getElementById('t-cat-g').style.display=isBank?'none':'block';
+  document.getElementById('t-dir-g').style.display=isBank?'block':'none';
+  if(!isBank) document.getElementById('t-cat').innerHTML=CATS[type].map(c=>`<option>${c}</option>`).join('');
+}
+function saveTxn(){
+  const date=document.getElementById('t-date').value;
+  const amount=parseFloat(document.getElementById('t-amt').value);
+  const desc=document.getElementById('t-desc').value.trim();
+  const currency=document.getElementById('t-currency').value;
+  if(!date||!amount||amount<=0||!desc){toast('Fill in all fields','err');return;}
+  const t={id:Date.now(),date,amount,currency,amountNGN:toNGN(amount,currency),desc,type:txnMode,
+    category:txnMode==='deposit'?'Bank Transfer':document.getElementById('t-cat').value,
+    direction:txnMode==='deposit'?document.getElementById('t-dir').value:null,by:currentUser?currentUser.id:null};
+  DB.transactions.unshift(t);
+  applyBalance(t,1);
+  persist(); closeSheet('sh-txn'); renderTxnList(); renderDash();
+  toast('✓ Transaction saved');
+}
+function applyBalance(t,sign){
+  const a=t.amountNGN||toNGN(t.amount,t.currency||'NGN');
+  if(t.type==='income') DB.cashBalance+=sign*a;
+  if(t.type==='expense') DB.cashBalance-=sign*a;
+  if(t.type==='salary') DB.cashBalance-=sign*a;
+  if(t.type==='deposit'){
+    if(t.direction==='deposit'){DB.cashBalance-=sign*a;DB.bankBalance+=sign*a;}
+    else{DB.cashBalance+=sign*a;DB.bankBalance-=sign*a;}
+  }
+}
+function txnRow(t){
+  const isPos=t.type==='income'||(t.type==='deposit'&&t.direction==='withdrawal');
+  const s=isPos?'+':'-';
+  const cls=t.type==='salary'?'gc':isPos?'pos':'neg';
+  const by=DB.users.find(u=>u.id===t.by);
+  const cur=t.currency||'NGN';
+  const showFx=cur!=='NGN';
+  return `<div class="tri">
+    <div class="ti" style="background:${BGCOL[t.type]}">${ICONS[t.type]}</div>
+    <div class="tb">
+      <div class="td">${t.desc}</div>
+      <div class="tm"><span class="tag ${TAGCLS[t.type]}">${t.category||t.type}</span><span>${t.date}</span>${by?`<span class="by-dot">${initials(by.name)}</span>`:''}</div>
+    </div>
+    <div class="tra">
+      <div class="ta ${cls}">${s}${fmtCur(t.amount,cur)}</div>
+      ${showFx?`<div class="fx-hint">≈ ${fmtNGN(t.amountNGN||t.amount)}</div>`:''}
+      <button class="db" onclick="promptDel(${t.id})">×</button>
+    </div>
+  </div>`;
+}
+function renderTxnList(){
+  const filt=txnFilter==='all'?DB.transactions:DB.transactions.filter(t=>t.type===txnFilter);
+  document.getElementById('txn-fstrip').innerHTML=['all','income','expense','deposit','salary'].map(f=>`<button class="fb ${txnFilter===f?'on':''}" onclick="setFilter('${f}')">${f==='all'?'All':f.charAt(0).toUpperCase()+f.slice(1)}</button>`).join('');
+  document.getElementById('txn-list').innerHTML=filt.length?filt.map(txnRow).join(''):`<div class="empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No transactions yet</p></div>`;
+}
+function setFilter(f){ txnFilter=f; renderTxnList(); }
+
+// ── DELETE ──
+function promptDel(id){ pendingDelId=id; openSheet('sh-del'); }
+function confirmDel(){
+  const idx=DB.transactions.findIndex(t=>t.id===pendingDelId);
+  if(idx>=0){ applyBalance(DB.transactions[idx],-1); DB.transactions.splice(idx,1); persist(); renderTxnList(); renderDash(); renderPayroll(); toast('Entry deleted'); }
+  closeSheet('sh-del');
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function renderDash(){
+  const now=new Date(); const mo=now.getMonth(); const yr=now.getFullYear();
+  const mtd=DB.transactions.filter(t=>{const d=new Date(t.date);return d.getMonth()===mo&&d.getFullYear()===yr;});
+  const inc=mtd.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const exp=mtd.filter(t=>t.type==='expense').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const sal=mtd.filter(t=>t.type==='salary').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const profit=inc-exp-sal;
+  const margin=inc>0?(profit/inc*100):0;
+  document.getElementById('dash-hero').innerHTML=`
+    <div class="hero-lbl">Net Profit · ${now.toLocaleString('default',{month:'long',year:'numeric'})}</div>
+    <div class="hero-val" style="color:${profit>=0?'var(--gold2)':'var(--red)'}">${profit>=0?'+':'-'}${fmtNGN(Math.abs(profit))}</div>
+    <div class="hero-sub">Margin ${margin.toFixed(1)}% · ${now.toLocaleDateString('en-NG',{weekday:'short',month:'short',day:'numeric'})}</div>
+    <div class="hero-grid">
+      <div class="hp"><div class="hl">Revenue</div><div class="hv pos">${fmtNGN(inc)}</div></div>
+      <div class="hp"><div class="hl">Expenses</div><div class="hv neg">${fmtNGN(exp+sal)}</div></div>
+      <div class="hp"><div class="hl">Employees</div><div class="hv gc">${DB.employees.length}</div></div>
+    </div>`;
+  document.getElementById('dash-mini').innerHTML=`
+    <div class="mc"><div class="ml">Cash Balance</div><div class="mv tc">${fmtNGN(DB.cashBalance)}</div></div>
+    <div class="mc"><div class="ml">Bank Balance</div><div class="mv tc">${fmtNGN(DB.bankBalance)}</div></div>`;
+  const recent=DB.transactions.slice(0,5);
+  document.getElementById('dash-recent').innerHTML=recent.length?recent.map(txnRow).join(''):`<div class="empty"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No activity yet</p></div>`;
+}
+
+// ══════════════════════════════════════════════
+//  AI BANK STATEMENT IMPORT
+// ══════════════════════════════════════════════
+function fileToBase64(file){
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=()=>rej(new Error('Read failed'));r.readAsDataURL(file);});
+}
+async function handleFileSelect(event){
+  const file=event.target.files[0]; if(!file) return;
+  document.getElementById('import-status').innerHTML=`<div style="padding:10px 0;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px"><span class="spin"></span>Reading file…</div>`;
+  document.getElementById('import-preview').innerHTML='';
+  document.getElementById('import-actions').style.display='none';
+  try{
+    const base64=await fileToBase64(file);
+    document.getElementById('import-status').innerHTML=`<div style="padding:10px 0;display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px"><span class="spin"></span>AI is analysing your statement…</div>`;
+    let contentArr=[];
+    if(file.type.startsWith('image/')){ contentArr.push({type:'image',source:{type:'base64',media_type:file.type,data:base64}}); }
+    else if(file.type==='application/pdf'){ contentArr.push({type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}}); }
+    contentArr.push({type:'text',text:`Extract all transactions from this bank statement. Return ONLY a JSON array with no other text or markdown. Each object must have: date (YYYY-MM-DD), description (string, max 60 chars), amount (positive number), type ("income" for credits/deposits, "expense" for debits/withdrawals), category (one of: Consulting Fees, Retainer Payment, Project Revenue, Advisory Fee, Contract Payment, Other Income, Rent / Office, Utilities, Software & Subscriptions, Marketing & Ads, Travel & Transport, Meals & Entertainment, Professional Fees, Repairs & Maintenance, Taxes & Filing, Insurance, Staff Welfare, Miscellaneous, Bank Transfer), currency (detected currency code, default NGN). Return [] if none found.`});
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:contentArr}]})});
+    const data=await res.json();
+    const raw=data.content?.map(c=>c.text||'').join('').trim();
+    let extracted=[];
+    try{ extracted=JSON.parse(raw.replace(/```json|```/g,'').trim()); } catch(e){ throw new Error('Could not parse AI response'); }
+    if(!Array.isArray(extracted)||!extracted.length){
+      document.getElementById('import-status').innerHTML=`<div style="padding:10px 0;color:var(--red);font-size:13px">⚠ No transactions found. Try a clearer image.</div>`; return;
+    }
+    importCandidates=extracted.map((t,i)=>({...t,selected:true,tempId:i}));
+    renderImportPreview();
+    document.getElementById('import-status').innerHTML=`<div style="padding:6px 0;font-size:11px;color:var(--muted)"><span class="ai-badge">✦ AI</span> Found ${extracted.length} transaction${extracted.length!==1?'s':''} — review below</div>`;
+    document.getElementById('import-actions').style.display='block';
+  } catch(err){
+    document.getElementById('import-status').innerHTML=`<div style="padding:10px 0;color:var(--red);font-size:13px">⚠ ${err.message||'Error reading file'}. Please try again.</div>`;
+  }
+}
+function renderImportPreview(){
+  document.getElementById('import-preview').innerHTML=importCandidates.map(t=>`
+    <div class="import-row" id="ir-${t.tempId}">
+      <div class="ir-check ${t.selected?'checked':''}" onclick="toggleImport(${t.tempId})">${t.selected?'✓':''}</div>
+      <div class="ir-body">
+        <div class="ir-desc">${t.description||t.desc||'Unknown'}</div>
+        <div class="ir-meta">${t.date} · <span class="tag ${t.type==='income'?'t-i':'t-e'}">${t.category}</span></div>
+      </div>
+      <div class="ir-amt ${t.type==='income'?'pos':'neg'}">${t.type==='income'?'+':'-'}${fmtCur(t.amount,t.currency||'NGN')}</div>
+    </div>`).join('');
+}
+function toggleImport(id){ const c=importCandidates.find(t=>t.tempId===id); if(c){c.selected=!c.selected;renderImportPreview();} }
+function toggleAllImport(){ const a=importCandidates.every(t=>t.selected); importCandidates.forEach(t=>t.selected=!a); document.getElementById('sel-all-btn').textContent=a?'Select All':'Deselect All'; renderImportPreview(); }
+async function importSelected(){
+  const sel=importCandidates.filter(t=>t.selected);
+  if(!sel.length){toast('No transactions selected','err');return;}
+  let n=0;
+  sel.forEach(t=>{
+    const ngnAmt=toNGN(t.amount,t.currency||'NGN');
+    const txn={id:Date.now()+n,date:t.date||today(),amount:t.amount,currency:t.currency||'NGN',amountNGN:ngnAmt,desc:t.description||t.desc||'Imported',type:t.type,category:t.category||'Other Income',direction:null,by:currentUser?currentUser.id:null};
+    DB.transactions.unshift(txn); applyBalance(txn,1); n++;
+  });
+  DB.transactions.sort((a,b)=>b.date.localeCompare(a.date));
+  await persist();
+  closeSheet('sh-import'); renderTxnList(); renderDash();
+  toast(`✓ ${n} transaction${n!==1?'s':''} imported`);
+  importCandidates=[]; document.getElementById('import-status').innerHTML=''; document.getElementById('import-preview').innerHTML=''; document.getElementById('import-actions').style.display='none'; document.getElementById('file-input').value='';
+}
+
+// ══════════════════════════════════════════════
+//  PAYROLL
+// ══════════════════════════════════════════════
+function saveEmp(){
+  const name=document.getElementById('e-name').value.trim();
+  const role=document.getElementById('e-role').value.trim();
+  const salary=parseFloat(document.getElementById('e-sal').value);
+  const currency=document.getElementById('e-cur').value;
+  if(!name||!salary||salary<=0){toast('Enter name & salary','err');return;}
+  DB.employees.push({id:Date.now(),name,role:role||'Employee',salary,currency,salaryNGN:toNGN(salary,currency),start:document.getElementById('e-start').value,color:COLORS[DB.employees.length%COLORS.length]});
+  persist(); closeSheet('sh-emp'); renderPayroll(); refreshPayDrop();
+  toast('✓ Employee added');
+}
+function renderPayroll(){
+  const total=DB.employees.reduce((s,e)=>s+(e.salaryNGN||toNGN(e.salary,e.currency||'NGN')),0);
+  const now=new Date(); const mo=now.getMonth(); const yr=now.getFullYear();
+  const paid=DB.transactions.filter(t=>{if(t.type!=='salary')return false;const d=new Date(t.date);return d.getMonth()===mo&&d.getFullYear()===yr;}).reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  document.getElementById('pay-summary').innerHTML=`
+    <div class="mc"><div class="ml">Monthly Payroll</div><div class="mv gc">${fmtNGN(total)}</div></div>
+    <div class="mc"><div class="ml">Paid This Month</div><div class="mv pos">${fmtNGN(paid)}</div></div>`;
+  document.getElementById('emp-list').innerHTML=DB.employees.length?DB.employees.map(e=>{
+    const ngnSal=e.salaryNGN||toNGN(e.salary,e.currency||'NGN');
+    const paidEmp=DB.transactions.filter(t=>t.type==='salary'&&t.desc&&t.desc.includes(e.name)&&t.date.slice(0,7)===today().slice(0,7)).reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+    const isPaid=paidEmp>=ngnSal*.95;
+    return `<div class="er">
+      <div class="av" style="background:${e.color||COLORS[0]}22;color:${e.color||COLORS[0]};width:40px;height:40px;font-size:13px;flex-shrink:0">${initials(e.name)}</div>
+      <div class="ei"><div class="en">${e.name}</div><div class="eo">${e.role}</div></div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:600">${fmtCur(e.salary,e.currency||'NGN')}</div>
+        <div style="font-size:10px;color:var(--muted)">per month</div>
+        <span class="pbadge ${isPaid?'paid':'unpaid'}" style="margin-top:4px;display:inline-block">${isPaid?'✓ Paid':'Unpaid'}</span>
+      </div>
+    </div>`;
+  }).join(''):`<div class="empty"><p>No employees yet.</p></div>`;
+  const sals=DB.transactions.filter(t=>t.type==='salary');
+  document.getElementById('sal-hist').innerHTML=sals.length?sals.map(txnRow).join(''):`<div class="empty"><p>No salary payments recorded.</p></div>`;
+}
+function refreshPayDrop(){
+  document.getElementById('p-emp').innerHTML='<option value="">— select —</option>'+DB.employees.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+function fillPayAmt(){
+  const id=document.getElementById('p-emp').value;
+  const emp=DB.employees.find(e=>String(e.id)===id);
+  if(emp) document.getElementById('p-amt').value=emp.salary.toFixed(2);
+}
+function payEmp(){
+  const empId=document.getElementById('p-emp').value;
+  const period=document.getElementById('p-period').value;
+  const amount=parseFloat(document.getElementById('p-amt').value);
+  const note=document.getElementById('p-note').value.trim();
+  if(!empId||!period||!amount||amount<=0){toast('Fill all fields','err');return;}
+  const emp=DB.employees.find(e=>String(e.id)===empId);
+  const currency=emp.currency||'NGN';
+  const t={id:Date.now(),date:period+'-01',amount,currency,amountNGN:toNGN(amount,currency),desc:`Salary — ${emp.name} (${period})${note?' · '+note:''}`,type:'salary',category:'Salary',direction:null,by:currentUser?currentUser.id:null};
+  DB.transactions.unshift(t); applyBalance(t,1);
+  persist(); closeSheet('sh-paysalary'); renderPayroll(); renderDash();
+  toast(`✓ Salary recorded for ${emp.name}`);
+}
+
+// ══════════════════════════════════════════════
+//  REPORTS
+// ══════════════════════════════════════════════
+function setDefaultDates(){
+  const now=new Date(); const y=now.getFullYear(); const m=now.getMonth();
+  const first=new Date(y,m,1).toISOString().split('T')[0]; const t=today();
+  ['pl-from','cf-from'].forEach(id=>document.getElementById(id).value=first);
+  ['pl-to','cf-to','bs-date'].forEach(id=>document.getElementById(id).value=t);
+}
+function switchRep(id,btn){
+  document.querySelectorAll('.rpanel').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.rtab').forEach(b=>b.classList.remove('on'));
+  document.getElementById('rp-'+id).classList.add('on'); btn.classList.add('on');
+}
+function renderAllReports(){ genPL(); genBS(); genCF(); }
+function groupBy(arr){ return arr.reduce((a,t)=>{a[t.category]=(a[t.category]||0)+(t.amountNGN||t.amount);return a;},{}); }
+
+function genPL(){
+  const from=document.getElementById('pl-from').value,to=document.getElementById('pl-to').value; if(!from||!to) return;
+  const txns=DB.transactions.filter(t=>t.date>=from&&t.date<=to);
+  const inc=txns.filter(t=>t.type==='income'),exp=txns.filter(t=>t.type==='expense'),sal=txns.filter(t=>t.type==='salary');
+  const tInc=inc.reduce((s,t)=>s+(t.amountNGN||t.amount),0),tExp=exp.reduce((s,t)=>s+(t.amountNGN||t.amount),0),tSal=sal.reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const gross=tInc-tExp,net=gross-tSal,margin=tInc>0?(net/tInc*100):0;
+  const rf=repFmt;
+  document.getElementById('pl-out').innerHTML=`
+    <div class="sbanner"><div class="sl">Net Profit / Loss</div><div class="sv" style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':'-'}${rf(Math.abs(net))}</div><div class="ss">Margin: ${margin.toFixed(1)}% · ${from} → ${to}</div></div>
+    <div class="rcard"><div class="rcard-hd">Revenue</div><table class="rt"><tbody>
+      ${Object.entries(groupBy(inc)).map(([k,v])=>`<tr><td>${k}</td><td class="pos">+${rf(v)}</td></tr>`).join('')||'<tr><td colspan="2" style="color:var(--muted)">No income this period</td></tr>'}
+      <tr class="tot"><td>Total Revenue</td><td class="pos">+${rf(tInc)}</td></tr>
+    </tbody></table></div>
+    <div class="rcard"><div class="rcard-hd">Expenses</div><table class="rt"><tbody>
+      ${Object.entries(groupBy(exp)).map(([k,v])=>`<tr><td>${k}</td><td class="neg">-${rf(v)}</td></tr>`).join('')||'<tr><td colspan="2" style="color:var(--muted)">No expenses this period</td></tr>'}
+      ${tSal>0?`<tr><td>Payroll</td><td class="neg">-${rf(tSal)}</td></tr>`:''}
+      <tr class="tot"><td>Total Expenses</td><td class="neg">-${rf(tExp+tSal)}</td></tr>
+    </tbody></table></div>
+    <div class="rcard"><div class="rcard-hd">Summary</div><table class="rt"><tbody>
+      <tr><td>Gross Profit</td><td style="color:${gross>=0?'var(--green)':'var(--red)'}">${gross>=0?'+':'-'}${rf(Math.abs(gross))}</td></tr>
+      <tr><td>Less: Payroll</td><td class="neg">-${rf(tSal)}</td></tr>
+      <tr class="tot"><td>Net Income</td><td style="color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':'-'}${rf(Math.abs(net))}</td></tr>
+    </tbody></table></div>`;
+}
+function genBS(){
+  const asOf=document.getElementById('bs-date').value; if(!asOf) return;
+  const rf=repFmt;
+  const tInc=DB.transactions.filter(t=>t.type==='income'&&t.date<=asOf).reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const tExp=DB.transactions.filter(t=>t.type==='expense'&&t.date<=asOf).reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const tSal=DB.transactions.filter(t=>t.type==='salary'&&t.date<=asOf).reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const retained=tInc-tExp-tSal,total=DB.cashBalance+DB.bankBalance;
+  document.getElementById('bs-out').innerHTML=`
+    <div class="sbanner"><div class="sl">Total Assets</div><div class="sv tc">${rf(total)}</div><div class="ss">As of ${asOf}</div></div>
+    <div class="rcard"><div class="rcard-hd">Assets</div><table class="rt"><tbody>
+      <tr><td>Cash on Hand</td><td>${rf(DB.cashBalance)}</td></tr>
+      <tr><td>Bank Balance</td><td>${rf(DB.bankBalance)}</td></tr>
+      <tr class="tot"><td>Total Assets</td><td class="tc">${rf(total)}</td></tr>
+    </tbody></table></div>
+    <div class="rcard"><div class="rcard-hd">Equity</div><table class="rt"><tbody>
+      <tr><td>Retained Earnings</td><td style="color:${retained>=0?'var(--green)':'var(--red)'}">${retained>=0?'+':'-'}${rf(Math.abs(retained))}</td></tr>
+      <tr class="tot"><td>Total Equity</td><td class="tc">${rf(total)}</td></tr>
+    </tbody></table></div>`;
+}
+function genCF(){
+  const from=document.getElementById('cf-from').value,to=document.getElementById('cf-to').value; if(!from||!to) return;
+  const rf=repFmt;
+  const txns=DB.transactions.filter(t=>t.date>=from&&t.date<=to);
+  const opIn=txns.filter(t=>t.type==='income').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const opOut=txns.filter(t=>t.type==='expense'||t.type==='salary').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const opNet=opIn-opOut;
+  const bkIn=txns.filter(t=>t.type==='deposit'&&t.direction==='deposit').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const bkOut=txns.filter(t=>t.type==='deposit'&&t.direction==='withdrawal').reduce((s,t)=>s+(t.amountNGN||t.amount),0);
+  const finNet=bkIn-bkOut,total=opNet+finNet;
+  const months={};
+  txns.forEach(t=>{const m=t.date.slice(0,7);if(!months[m])months[m]={i:0,o:0};if(t.type==='income')months[m].i+=(t.amountNGN||t.amount);if(t.type==='expense'||t.type==='salary')months[m].o+=(t.amountNGN||t.amount);});
+  const maxV=Math.max(...Object.values(months).flatMap(m=>[m.i,m.o]),1);
+  const bars=Object.entries(months).map(([m,v])=>`<div class="bar-row"><div class="bar-lbl">${m.slice(5)}</div><div style="flex:1"><div class="bar-track"><div class="bar-fill" style="width:${(v.i/maxV*100).toFixed(1)}%;background:var(--green)"></div></div><div class="bar-track" style="margin-top:3px"><div class="bar-fill" style="width:${(v.o/maxV*100).toFixed(1)}%;background:var(--red)"></div></div></div></div>`).join('');
+  document.getElementById('cf-out').innerHTML=`
+    <div class="sbanner"><div class="sl">Net Cash Flow</div><div class="sv" style="color:${total>=0?'var(--green)':'var(--red)'}">${total>=0?'+':'-'}${rf(Math.abs(total))}</div><div class="ss">${from} → ${to}</div></div>
+    <div class="rcard"><div class="rcard-hd">Monthly Overview <span style="float:right;font-size:10px;color:var(--muted)"><span style="display:inline-block;width:7px;height:7px;background:var(--green);border-radius:2px;margin-right:3px"></span>In<span style="display:inline-block;width:7px;height:7px;background:var(--red);border-radius:2px;margin:0 3px 0 8px"></span>Out</span></div>${bars||'<p style="color:var(--muted);font-size:12px">No data for this period.</p>'}</div>
+    <div class="rcard"><div class="rcard-hd">Statement</div><table class="rt"><tbody>
+      <tr><td colspan="2" style="color:var(--muted);font-size:11px;padding-bottom:4px">Operating Activities</td></tr>
+      <tr class="sub"><td style="padding-left:10px">Cash receipts</td><td class="pos">+${rf(opIn)}</td></tr>
+      <tr class="sub"><td style="padding-left:10px">Cash payments</td><td class="neg">-${rf(opOut)}</td></tr>
+      <tr><td>Net Operating</td><td style="color:${opNet>=0?'var(--green)':'var(--red)'};font-weight:600">${opNet>=0?'+':'-'}${rf(Math.abs(opNet))}</td></tr>
+      <tr><td colspan="2" style="color:var(--muted);font-size:11px;padding:8px 0 4px">Financing Activities</td></tr>
+      <tr class="sub"><td style="padding-left:10px">Bank deposits in</td><td class="pos">+${rf(bkIn)}</td></tr>
+      <tr class="sub"><td style="padding-left:10px">Bank withdrawals</td><td class="neg">-${rf(bkOut)}</td></tr>
+      <tr><td>Net Financing</td><td style="color:${finNet>=0?'var(--green)':'var(--red)'};font-weight:600">${finNet>=0?'+':'-'}${rf(Math.abs(finNet))}</td></tr>
+      <tr class="tot"><td>Net Cash Change</td><td style="color:${total>=0?'var(--green)':'var(--red)'}">${total>=0?'+':'-'}${rf(Math.abs(total))}</td></tr>
+    </tbody></table></div>`;
+}
+
+// ══════════════════════════════════════════════
+//  SHEET UTILS
+// ══════════════════════════════════════════════
+function openSheet(id){ document.getElementById(id).classList.add('open'); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.so').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+</script>
+</body>
+</html>
